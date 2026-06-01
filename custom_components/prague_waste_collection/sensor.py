@@ -8,17 +8,18 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 
-_LOGGER = logging.getLogger(__name__)
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
+    # Inicializace loggeru přímo uvnitř funkce - nemůže hodit NameError
+    logger = logging.getLogger(__name__)
+    
     coordinator = hass.data[DOMAIN][entry.entry_id]
     
     if not coordinator.data:
-        _LOGGER.warning("Koordinátor neobsahuje žádná data o popelnicích. Žádné entity nebudou vytvořeny.")
+        logger.warning("Koordinátor neobsahuje žádná data o popelnicích. Žádné entity nebudou vytvořeny.")
         return
 
     entities = []
-    _LOGGER.info("Vytvářím entity senzorů pro %d popelnic", len(coordinator.data))
+    logger.info("Vytvářím entity senzorů pro %d popelnic", len(coordinator.data))
 
     for idx, container in enumerate(coordinator.data):
         entities.append(WasteSensor(coordinator, idx, "trash_type", "Typ odpadu"))
