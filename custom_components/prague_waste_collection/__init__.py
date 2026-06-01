@@ -75,7 +75,7 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
             station_name = props.get("name", f"Stanice {station_id}")
 
             for container in props.get("containers", []):
-                container_id = container.get("id")
+                container_id = container.get("container_id") or container.get("id")
                 if not container_id:
                     continue
 
@@ -83,9 +83,11 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
                 if trash_type == "Multikomoditní sběr":
                     trash_type = "Plast"
 
-                days = container.get("cleaning_days")
-                next_pick = container.get("next_cleaning_date")
-                last_pick = container.get("last_cleaning_date")
+                cleaning_freq = container.get("cleaning_frequency", {})
+                days = cleaning_freq.get("pick_days")
+                next_pick = cleaning_freq.get("next_pick")
+                
+                last_pick = container.get("last_pick")
                 
                 if next_pick and "T" in next_pick:
                     next_pick = next_pick.split("T")[0]
@@ -93,11 +95,12 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
                     last_pick = last_pick.split("T")[0]
 
                 is_monitored = container.get("is_monitored", False)
+                
                 fill_percentage = None
                 if is_monitored:
                     last_meas = container.get("last_measurement")
                     if last_meas and isinstance(last_meas, dict):
-                        fill_percentage = last_meas.get("fill_percentage")
+                        fill_percentage = last_meas.get("percent_calculated")
 
                 containers.append({
                     "station_id": station_id,
