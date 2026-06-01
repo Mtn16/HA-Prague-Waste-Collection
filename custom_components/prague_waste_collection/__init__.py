@@ -9,19 +9,24 @@ from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+PLATFORMS = ["sensor", "calendar"]
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    _LOGGER.info("Inicializace integrace Prague Waste Collection pro entry: %s", entry.entry_id)
     hass.data.setdefault(DOMAIN, {})
     
     coordinator = GolemioDataCoordinator(hass, entry)
+    
     await coordinator.async_config_entry_first_refresh()
     
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "calendar"])
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor", "calendar"])
+    _LOGGER.info("Odebírání integrace Prague Waste Collection: %s", entry.entry_id)
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
@@ -49,20 +54,26 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
             "Accept": "application/json"
         }
 
+        _LOGGER.info("Volám Golemio API: %s", url)
+
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(url, headers=headers, timeout=15) as response:
                     if response.status != 200:
-                        raise UpdateFailed(f"Error communication with Golemio API: {response.status}")
+                        _LOGGER.error("Chyba Golemio API, HTTP Status: %s", response.status)
+                        raise UpdateFailed(f"Chyba komunikace s Golemio API: {response.status}")
                     
                     data = await response.json()
                     return self._process_golemio_data(data)
             except Exception as err:
-                raise UpdateFailed(f"Server disconnected or error: {err}")
+                _LOGGER.error("Chyba při komunikaci s Golemio API: %s", err)
+                raise UpdateFailed(f"Chyba připojení k serveru: {err}")
 
     def _process_golemio_data(self, data):
         features = data.get("features", [])
         containers = []
+
+        _LOGGER.info("Golemio API vrátilo %d stanic (features)", len(features))
 
         for feature in features:
             props = feature.get("properties", {})
@@ -108,5 +119,5 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
                 }
                 containers.append(cleaned_container)
         
-        _LOGGER.debug("Zpracováno %d kontejnerů z Golemio API", len(containers))
+        _LOGGER.info("Úspěšně zpracováno %d popelnic (kontejnerů)", len(containers))
         return containers

@@ -1,3 +1,4 @@
+import logging
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -9,7 +10,13 @@ from .const import DOMAIN
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    
+    if not coordinator.data:
+        _LOGGER.warning("Koordinátor neobsahuje žádná data o popelnicích. Žádné entity nebudou vytvořeny.")
+        return
+
     entities = []
+    _LOGGER.info("Vytvářím entity senzorů pro %d popelnic", len(coordinator.data))
 
     for idx, container in enumerate(coordinator.data):
         entities.append(WasteSensor(coordinator, idx, "trash_type", "Typ odpadu"))
@@ -20,7 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         if container["is_monitored"]:
             entities.append(WasteSensor(coordinator, idx, "fill_percentage", "Úroveň naplnění", unit="%"))
 
-    async_add_entities(entities)
+    async_add_entities(entities, update_before_add=True)
 
 class WasteSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, container_idx, key, name_suffix, device_class=None, unit=None):
