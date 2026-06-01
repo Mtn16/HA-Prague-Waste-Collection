@@ -6,7 +6,7 @@ import homeassistant.helpers.config_validation as cv
 
 from .const import DOMAIN, StationType
 
-COORD_REGEX = re.compile(r"^([0-9.]+)[NE]?\s*,\s*([0-9.]+)[NE]?$")
+COORD_REGEX = re.compile(r"^\s*([0-9.]+)[NE]?\s*,\s*([0-9.]+)[NE]?\s*$")
 
 class PragueWasteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -23,8 +23,10 @@ class PragueWasteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["coordinates"] = "invalid_coords"
             else:
                 lat, lon = match.groups()
+                
                 user_input["latitude"] = float(lat)
                 user_input["longitude"] = float(lon)
+                user_input["coordinates"] = f"{lat},{lon}"
                 
                 if api_key_saved and not user_input.get("api_key"):
                     user_input["api_key"] = api_key_saved
@@ -38,7 +40,7 @@ class PragueWasteConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
         data_schema.update({
             vol.Required("coordinates"): str,
-            vol.Required("station_type", default=StationType.PUBLIC.value): vol.In(StationType.choices()),
+            vol.Required("station_type", default=StationType.PUBLIC.value): vol.In([e.value for e in StationType]),
         })
 
         return self.async_show_form(

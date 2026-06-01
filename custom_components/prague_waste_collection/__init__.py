@@ -46,9 +46,11 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
         api_key = self.entry.data.get("api_key")
         lat = self.entry.data.get("latitude")
         lon = self.entry.data.get("longitude")
+        lat_str = str(lat).strip()
+        lon_str = str(lon).strip()
         station_type = self.entry.data.get("station_type")
 
-        url = f"https://api.golemio.cz/v2/sortedwastestations?latlng={lat},{lon}&range=10&accessibility={station_type}"
+        url = f"https://api.golemio.cz/v2/sortedwastestations?latlng={lat_str},{lon_str}&range=10&accessibility={station_type}"
         headers = {
             "X-Access-Token": api_key,
             "Accept": "application/json"
