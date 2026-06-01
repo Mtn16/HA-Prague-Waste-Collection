@@ -3,6 +3,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from datetime import datetime
 
 from .const import DOMAIN
 
@@ -32,25 +33,45 @@ class WasteSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def container_data(self):
-        return self.coordinator.data[self.idx]
+        if self.idx < len(self.coordinator.data):
+            return self.coordinator.data[self.idx]
+        return None
 
     @property
     def unique_id(self):
-        return f"{self.container_data['container_id']}_{self.key}"
+        if not self.container_data:
+            return None
+        return f"sensor_{self.container_data['container_id']}_{self.key}"
 
     @property
     def name(self):
-        return f"{self.container_data['trash_type']} - {self._name_suffix}"
+        if not self.container_data:
+            return f"Popelnice - {self._name_suffix}"
+        return f"{self.container_data['trash_type']} ({self.container_data['container_id']}) - {self._name_suffix}"
 
     @property
     def native_value(self):
-        return self.container_data.get(self.key)
+        if not self.container_data:
+            return None
+        
+        val = self.container_data.get(self.key)
+        
+        if self._attr_device_class == SensorDeviceClass.DATE and val:
+            try:
+                return datetime.strptime(val, "%Y-%m-%d").date()
+            except ValueError:
+                return None
+                
+        return val
 
     @property
     def device_info(self) -> DeviceInfo:
+        if not self.container_data:
+            return None
         return DeviceInfo(
             identifiers={(DOMAIN, self.container_data["container_id"])},
             name=f"Popelnice na {self.container_data['trash_type']}",
             manufacturer="Prague Waste Collection",
+            model=f"Kontejner ID: {self.container_data['container_id']}",
             suggested_area=self.container_data["station_name"],
         )

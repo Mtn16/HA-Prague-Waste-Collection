@@ -20,22 +20,30 @@ class WasteCalendarEntity(CoordinatorEntity, CalendarEntity):
     def __init__(self, coordinator, container_idx):
         super().__init__(coordinator)
         self.idx = container_idx
-        self._event = None
 
     @property
     def container_data(self):
-        return self.coordinator.data[self.idx]
+        if self.idx < len(self.coordinator.data):
+            return self.coordinator.data[self.idx]
+        return None
 
     @property
     def unique_id(self):
-        return f"{self.container_data['container_id']}_calendar"
+        if not self.container_data:
+            return None
+        return f"calendar_{self.container_data['container_id']}_svoz"
 
     @property
     def name(self):
-        return f"Svoz {self.container_data['trash_type']}"
+        if not self.container_data:
+            return "Svoz odpadu"
+        return f"Kalendář svozu - {self.container_data['trash_type']}"
 
     @property
     def event(self) -> CalendarEvent | None:
+        if not self.container_data:
+            return None
+            
         next_pick_str = self.container_data.get("next_pick")
         if not next_pick_str:
             return None
@@ -43,7 +51,7 @@ class WasteCalendarEntity(CoordinatorEntity, CalendarEntity):
         try:
             start_date = datetime.strptime(next_pick_str, "%Y-%m-%d").date()
             return CalendarEvent(
-                summary=f"Svoz {self.container_data['trash_type']}",
+                summary=f"Svoz: {self.container_data['trash_type']}",
                 start=start_date,
                 end=start_date + timedelta(days=1),
                 description=f"Plánované dny vývozu: {self.container_data.get('days')}"
@@ -59,8 +67,12 @@ class WasteCalendarEntity(CoordinatorEntity, CalendarEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
+        if not self.container_data:
+            return None
         return DeviceInfo(
             identifiers={(DOMAIN, self.container_data["container_id"])},
             name=f"Popelnice na {self.container_data['trash_type']}",
             manufacturer="Prague Waste Collection",
+            model=f"Kontejner ID: {self.container_data['container_id']}",
+            suggested_area=self.container_data["station_name"],
         )

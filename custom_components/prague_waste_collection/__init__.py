@@ -70,21 +70,43 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
             station_name = props.get("name", f"Stanice {station_id}")
 
             for container in props.get("containers", []):
+                container_id = container.get("id")
+                if not container_id:
+                    continue
+
                 trash_type = container.get("trash_type", {}).get("description", "Neznámý")
                 if trash_type == "Multikomoditní sběr":
                     trash_type = "Plast"
 
+                days = container.get("cleaning_days")
+                next_pick = container.get("next_cleaning_date")
+                last_pick = container.get("last_cleaning_date")
+                
+                if next_pick and "T" in next_pick:
+                    next_pick = next_pick.split("T")[0]
+                if last_pick and "T" in last_pick:
+                    last_pick = last_pick.split("T")[0]
+
+                is_monitored = container.get("is_monitored", False)
+                
+                fill_percentage = None
+                if is_monitored:
+                    last_meas = container.get("last_measurement")
+                    if last_meas and isinstance(last_meas, dict):
+                        fill_percentage = last_meas.get("fill_percentage")
+
                 cleaned_container = {
                     "station_id": station_id,
                     "station_name": station_name,
-                    "container_id": container.get("id"),
+                    "container_id": str(container_id),
                     "trash_type": trash_type,
-                    "days": container.get("cleaning_days"),
-                    "next_pick": container.get("next_cleaning_date"),
-                    "last_pick": container.get("last_cleaning_date"),
-                    "is_monitored": container.get("is_monitored"),
-                    "fill_percentage": container.get("last_measurement", {}).get("fill_percentage") if container.get("is_monitored") else None
+                    "days": days if days else "Neuvedeno",
+                    "next_pick": next_pick,
+                    "last_pick": last_pick,
+                    "is_monitored": is_monitored,
+                    "fill_percentage": fill_percentage
                 }
                 containers.append(cleaned_container)
         
+        _LOGGER.debug("Zpracováno %d kontejnerů z Golemio API", len(containers))
         return containers
