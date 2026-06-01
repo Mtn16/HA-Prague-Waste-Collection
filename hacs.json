@@ -1,0 +1,8 @@
+{
+  "name": "Prague Waste Collection",
+  "render_readme": true,
+  "homeassistant": "2026.5.4",
+  "country": ["CZ"],
+  "domains": ["sensor"],
+  "iot_class": "cloud_polling"
+}

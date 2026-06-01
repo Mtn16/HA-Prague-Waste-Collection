@@ -1,0 +1,18 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nastavení Prague Waste Collection",
+        "description": "Zadejte údaje pro vyhledání nejbližších popelnic (okruh 10 metrů). Pokud již byl API klíč zadán dříve, pole se nezobrazí a použije se uložený klíč.",
+        "data": {
+          "api_key": "Golemio API Klíč",
+          "coordinates": "Souřadnice (např. 50.0946175, 14.4689381)",
+          "station_type": "Typ stanice odpadu"
+        }
+      }
+    },
+    "error": {
+      "invalid_coords": "Neplatný formát souřadnic. Použijte např. '50.0946175, 14.4689381' nebo variantu s N/E."
+    }
+  }
+}

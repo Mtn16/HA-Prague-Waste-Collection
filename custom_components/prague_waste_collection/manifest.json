@@ -1,0 +1,11 @@
+{
+  "domain": "prague_waste_collection",
+  "name": "Prague Waste Collection",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/Mtn16/HA-Prague-Waste-Collection",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Mtn16/HA-Prague-Waste-Collection/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

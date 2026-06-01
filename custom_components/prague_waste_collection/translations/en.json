@@ -1,0 +1,18 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Setup Prague Waste Collection",
+        "description": "Enter the details to find the nearest waste stations (10-meter radius). If an API key was provided in a previous setup, the field is hidden and the saved key is used.",
+        "data": {
+          "api_key": "Golemio API Key",
+          "coordinates": "Coordinates (e.g., 50.0946175, 14.4689381)",
+          "station_type": "Waste station type"
+        }
+      }
+    },
+    "error": {
+      "invalid_coords": "Invalid coordinate format. Use e.g., '50.0946175, 14.4689381' or variations with N/E."
+    }
+  }
+}
