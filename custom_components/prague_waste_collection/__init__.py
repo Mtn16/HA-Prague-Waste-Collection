@@ -8,24 +8,22 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
 PLATFORMS = ["sensor", "calendar"]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    _LOGGER.info("Inicializace integrace Prague Waste Collection pro entry: %s", entry.entry_id)
-    hass.data.setdefault(DOMAIN, {})
+    _LOGGER.info("Inicializace integrace Prague Waste Collection")
     
     coordinator = GolemioDataCoordinator(hass, entry)
     
     await coordinator.async_config_entry_first_refresh()
     
+    hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    _LOGGER.info("Odebírání integrace Prague Waste Collection: %s", entry.entry_id)
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
@@ -37,7 +35,7 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
-            name="Prague Waste Collection",
+            name="Prague Waste Collection Coordinator",
             update_interval=timedelta(hours=6),
         )
         self.entry = entry
@@ -46,36 +44,30 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
         api_key = self.entry.data.get("api_key")
         lat = self.entry.data.get("latitude")
         lon = self.entry.data.get("longitude")
-        lat_str = str(lat).strip()
-        lon_str = str(lon).strip()
         station_type = self.entry.data.get("station_type")
 
-        url = f"https://api.golemio.cz/v2/sortedwastestations?latlng={lat_str}%2C{lon_str}&range=10&accessibility={station_type}&onlyMonitored=false"
+        url = f"https://api.golemio.cz/v2/sortedwastestations?latlng={lat}%2C{lon}&range=10&accessibility={station_type}&onlyMonitored=false"
         headers = {
             "X-Access-Token": api_key,
             "Accept": "application/json"
         }
 
-        _LOGGER.info("Volám Golemio API: %s", url)
+        _LOGGER.info("Fyzicky volám Golemio API: %s", url)
 
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(url, headers=headers, timeout=15) as response:
                     if response.status != 200:
-                        _LOGGER.error("Chyba Golemio API, HTTP Status: %s", response.status)
-                        raise UpdateFailed(f"Chyba komunikace s Golemio API: {response.status}")
+                        raise UpdateFailed(f"Chyba Golemio API: {response.status}")
                     
                     data = await response.json()
                     return self._process_golemio_data(data)
             except Exception as err:
-                _LOGGER.error("Chyba při komunikaci s Golemio API: %s", err)
-                raise UpdateFailed(f"Chyba připojení k serveru: {err}")
+                raise UpdateFailed(f"Chyba komunikace: {err}")
 
     def _process_golemio_data(self, data):
         features = data.get("features", [])
         containers = []
-
-        _LOGGER.info("Golemio API vrátilo %d stanic (features)", len(features))
 
         for feature in features:
             props = feature.get("properties", {})
@@ -101,14 +93,13 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
                     last_pick = last_pick.split("T")[0]
 
                 is_monitored = container.get("is_monitored", False)
-                
                 fill_percentage = None
                 if is_monitored:
                     last_meas = container.get("last_measurement")
                     if last_meas and isinstance(last_meas, dict):
                         fill_percentage = last_meas.get("fill_percentage")
 
-                cleaned_container = {
+                containers.append({
                     "station_id": station_id,
                     "station_name": station_name,
                     "container_id": str(container_id),
@@ -118,8 +109,7 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
                     "last_pick": last_pick,
                     "is_monitored": is_monitored,
                     "fill_percentage": fill_percentage
-                }
-                containers.append(cleaned_container)
+                })
         
-        _LOGGER.info("Úspěšně zpracováno %d popelnic (kontejnerů)", len(containers))
+        _LOGGER.info("Koordinátor úspěšně uložil %d popelnic", len(containers))
         return containers

@@ -9,18 +9,14 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
-    # Inicializace loggeru přímo uvnitř funkce - nemůže hodit NameError
     logger = logging.getLogger(__name__)
-    
     coordinator = hass.data[DOMAIN][entry.entry_id]
     
     if not coordinator.data:
-        logger.warning("Koordinátor neobsahuje žádná data o popelnicích. Žádné entity nebudou vytvořeny.")
+        logger.warning("Senzory nemají žádná data od koordinátoru.")
         return
 
     entities = []
-    logger.info("Vytvářím entity senzorů pro %d popelnic", len(coordinator.data))
-
     for idx, container in enumerate(coordinator.data):
         entities.append(WasteSensor(coordinator, idx, "trash_type", "Typ odpadu"))
         entities.append(WasteSensor(coordinator, idx, "days", "Dny vývozu"))
@@ -36,7 +32,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class WasteSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, container_idx, key, name_suffix, device_class=None, unit=None):
         super().__init__(coordinator)
-        self.idx = container_idx
+        self.container_idx = container_idx
         self.key = key
         self._name_suffix = name_suffix
         self._attr_device_class = device_class
@@ -44,8 +40,8 @@ class WasteSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def container_data(self):
-        if self.idx < len(self.coordinator.data):
-            return self.coordinator.data[self.idx]
+        if self.container_idx < len(self.coordinator.data):
+            return self.coordinator.data[self.container_idx]
         return None
 
     @property
@@ -66,13 +62,11 @@ class WasteSensor(CoordinatorEntity, SensorEntity):
             return None
         
         val = self.container_data.get(self.key)
-        
         if self._attr_device_class == SensorDeviceClass.DATE and val:
             try:
                 return datetime.strptime(val, "%Y-%m-%d").date()
             except ValueError:
                 return None
-                
         return val
 
     @property
