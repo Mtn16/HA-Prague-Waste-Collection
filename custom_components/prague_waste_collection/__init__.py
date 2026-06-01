@@ -50,7 +50,7 @@ class GolemioDataCoordinator(DataUpdateCoordinator):
         lon_str = str(lon).strip()
         station_type = self.entry.data.get("station_type")
 
-        url = f"https://api.golemio.cz/v2/sortedwastestations?latlng={lat_str},{lon_str}&range=10&accessibility={station_type}"
+        url = f"https://api.golemio.cz/v2/sortedwastestations?latlng={lat_str}%2C{lon_str}&range=10&accessibility={station_type}&onlyMonitored=false"
         headers = {
             "X-Access-Token": api_key,
             "Accept": "application/json"
