@@ -1,12 +1,14 @@
 import logging
+from datetime import datetime
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from datetime import datetime
 
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
     coordinator = hass.data[DOMAIN][entry.entry_id]
@@ -28,6 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
             entities.append(WasteSensor(coordinator, idx, "fill_percentage", "Úroveň naplnění", unit="%"))
 
     async_add_entities(entities, update_before_add=True)
+
 
 class WasteSensor(CoordinatorEntity, SensorEntity):
     def __init__(self, coordinator, container_idx, key, name_suffix, device_class=None, unit=None):
